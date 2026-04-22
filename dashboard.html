@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NJ Group IMS — Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        /* ══ VARIABLES ══════════════════════════════ */
+        :root {
+            --ink:     #0d0d14;
+            --surface: #f0eff9;
+            --card:    #ffffff;
+            --accent:  #2563eb;
+            --violet:  #7c3aed;
+            --green:   #16a34a;
+            --amber:   #d97706;
+            --red:     #dc2626;
+            --border:  #e5e4ed;
+            --muted:   #6b7280;
+            --mono:    'Space Mono', monospace;
+            --sans:    'DM Sans', sans-serif;
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        body { font-family: var(--sans); background: var(--surface); color: var(--ink); margin: 0; }
+
+        /* ══ FLASH TOASTS ═══════════════════════════ */
+        .flash-wrap { position:fixed; top:1rem; right:1rem; z-index:9999; display:flex; flex-direction:column; gap:.5rem; }
+        .flash-item { padding:.7rem 1.2rem; border-radius:10px; font-size:.84rem; font-weight:500;
+                      box-shadow:0 4px 20px rgba(0,0,0,.12); display:flex; align-items:center; gap:.55rem;
+                      animation:slideIn .3s ease; min-width:240px; }
+        .flash-success { background:#dcfce7; color:#15803d; border-left:4px solid #16a34a; }
+        .flash-danger  { background:#fee2e2; color:#b91c1c; border-left:4px solid #dc2626; }
+        .flash-warning { background:#fef3c7; color:#92400e; border-left:4px solid #d97706; }
+        .flash-info    { background:#dbeafe; color:#1d4ed8; border-left:4px solid #2563eb; }
+        @keyframes slideIn { from{opacity:0;transform:translateX(30px)} to{opacity:1;transform:translateX(0)} }
+
+        /* ══ TOPBAR ══════════════════════════════════ */
+        .topbar {
+            background: var(--ink);
+            padding: .85rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            box-shadow: 0 2px 20px rgba(0,0,0,.3);
+        }
+        .topbar-brand { font-family:var(--mono); color:#fff; font-weight:700; font-size:.95rem;
+                        letter-spacing:.08em; display:flex; align-items:center; gap:.55rem; }
+        .topbar-dot { width:8px; height:8px; border-radius:50%; background:#2563eb; display:inline-block; animation:pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+        .topbar-right { display:flex; align-items:center; gap:.65rem; }
+        .user-chip { background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.13);
+                     color:#fff; padding:.32rem .85rem; border-radius:99px; font-size:.8rem;
+                     display:flex; align-items:center; gap:.4rem; }
+        .role-badge { font-family:var(--mono); font-size:.65rem; font-weight:700; letter-spacing:.06em;
+                      padding:.15rem .5rem; border-radius:4px; text-transform:uppercase; }
+        .rb-Admin        { background:#7c3aed; color:#fff; }
+        .rb-Investigator { background:#0891b2; color:#fff; }
+        .rb-Reporter     { background:#059669; color:#fff; }
+        .btn-logout { background:rgba(220,38,38,.15); border:1px solid rgba(220,38,38,.3); color:#fca5a5;
+                      padding:.32rem .85rem; border-radius:99px; font-size:.8rem;
+                      text-decoration:none; transition:background .2s; display:flex; align-items:center; gap:.35rem; }
+        .btn-logout:hover { background:rgba(220,38,38,.3); color:#fff; }
+
+        /* ══ MAIN WRAPPER ════════════════════════════ */
+        .main { padding:1.75rem 2rem; max-width:1380px; margin:0 auto; }
+
+        /* ══ PAGE HEADER ══════════════════════════════ */
+        .page-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.75rem; gap:1rem; flex-wrap:wrap; }
+        .page-title { font-size:1.4rem; font-weight:700; margin:0 0 .2rem; }
+        .page-sub { color:var(--muted); font-size:.84rem; margin:0; }
+
+        /* ══ STAT CARDS ════════════════════════════════ */
+        .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:1.75rem; }
+        .stat-card { background:var(--card); border-radius:14px; padding:1.2rem 1.4rem;
+                     border-left:4px solid transparent; box-shadow:0 2px 12px rgba(0,0,0,.05);
+                     transition:transform .2s; }
+        .stat-card:hover { transform:translateY(-3px); }
+        .stat-card.c-blue   { border-color:#2563eb; }
+        .stat-card.c-amber  { border-color:#d97706; }
+        .stat-card.c-violet { border-color:#7c3aed; }
+        .stat-card.c-green  { border-color:#16a34a; }
+        .stat-label { font-size:.7rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:.3rem; }
+        .stat-value { font-size:2rem; font-weight:700; font-family:var(--mono); line-height:1; }
+        .sv-blue   { color:#2563eb; } .sv-amber { color:#d97706; }
+        .sv-violet { color:#7c3aed; } .sv-green { color:#16a34a; }
+
+        /* ══ SECTION HEADER ═══════════════════════════ */
+        .sec-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:.85rem; }
+        .sec-head h5 { font-size:.98rem; font-weight:700; margin:0; display:flex; align-items:center; gap:.45rem; }
+        .sec-head h5 i { color:var(--accent); }
+        .sec-count { font-size:.78rem; color:var(--muted); }
+
+        /* ══ TABLE CARD ════════════════════════════════ */
+        .tbl-card { background:var(--card); border-radius:14px; box-shadow:0 2px 12px rgba(0,0,0,.05);
+                    overflow:hidden; margin-bottom:2rem; }
+        table { width:100%; border-collapse:collapse; }
+        thead th { background:#f8f7f4; font-size:.7rem; font-weight:700; letter-spacing:.06em;
+                   text-transform:uppercase; color:var(--muted); padding:.75rem 1.1rem;
+                   border-bottom:1px solid var(--border); white-space:nowrap; }
+        tbody td { padding:.88rem 1.1rem; border-bottom:1px solid #f0eff9; font-size:.87rem; vertical-align:middle; }
+        tbody tr:last-child td { border-bottom:none; }
+        tbody tr:hover { background:#fafaf8; }
+
+        code.iid { font-family:var(--mono); font-size:.78rem; background:#ebebf7;
+                   padding:.18rem .5rem; border-radius:5px; color:var(--accent); }
+
+        /* ══ STATUS BADGES ════════════════════════════ */
+        .sbadge { display:inline-flex; align-items:center; gap:.28rem; font-size:.7rem; font-weight:700;
+                  letter-spacing:.04em; text-transform:uppercase; padding:.22rem .65rem; border-radius:99px; }
+        .sbadge::before { content:''; width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+        .sb-assigned   { background:#fef3c7; color:#92400e; } .sb-assigned::before   { background:#d97706; }
+        .sb-inprogress { background:#dbeafe; color:#1e40af; } .sb-inprogress::before { background:#2563eb; }
+        .sb-resolved   { background:#dcfce7; color:#166534; } .sb-resolved::before   { background:#16a34a; }
+        .sb-closed     { background:#f0fdf4; color:#15803d; } .sb-closed::before     { background:#22c55e; }
+        .sb-queued     { background:#f3f4f6; color:#374151; } .sb-queued::before     { background:#9ca3af; }
+        .sb-pending    { background:#fdf4ff; color:#6b21a8; } .sb-pending::before    { background:#a855f7; }
+
+        /* ══ PRIORITY BADGES ══════════════════════════ */
+        .pri { font-size:.67rem; font-family:var(--mono); font-weight:700; text-transform:uppercase;
+               padding:.16rem .48rem; border-radius:4px; letter-spacing:.05em; }
+        .pri-Low      { background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd; }
+        .pri-Medium   { background:#fefce8; color:#854d0e; border:1px solid #fde68a; }
+        .pri-High     { background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; }
+        .pri-Critical { background:#fff1f2; color:#be123c; border:1px solid #fecdd3; }
+
+        /* ══ ACTION BUTTONS ═══════════════════════════ */
+        .abtn { display:inline-flex; align-items:center; gap:.28rem; padding:.28rem .7rem;
+                border-radius:7px; font-size:.76rem; font-weight:600; border:none; cursor:pointer;
+                text-decoration:none; transition:opacity .15s, transform .12s; white-space:nowrap; }
+        .abtn:hover { opacity:.82; transform:translateY(-1px); }
+        .abtn-accept  { background:#dcfce7; color:#15803d; }
+        .abtn-refuse  { background:#fee2e2; color:#b91c1c; }
+        .abtn-solve   { background:#dbeafe; color:#1d4ed8; }
+        .abtn-close   { background:var(--ink); color:#fff; }
+        .abtn-pickup  { background:#f3e8ff; color:#6b21a8; }
+        .abtn-pdf     { background:#f0eff9; color:var(--ink); }
+
+        /* ══ PRIMARY BUTTON ═══════════════════════════ */
+        .btn-primary-ims { background:var(--accent); color:#fff; border:none; border-radius:10px;
+                           padding:.52rem 1.2rem; font-family:var(--sans); font-size:.85rem; font-weight:600;
+                           cursor:pointer; display:inline-flex; align-items:center; gap:.4rem; transition:background .2s; }
+        .btn-primary-ims:hover { background:#1d4ed8; }
+
+        /* ══ QUEUE BANNER ═════════════════════════════ */
+        .queue-banner { background:linear-gradient(135deg,#7c3aed,#2563eb); border-radius:14px;
+                        padding:1.1rem 1.5rem; margin-bottom:1.75rem; display:flex;
+                        align-items:center; justify-content:space-between; color:#fff;
+                        box-shadow:0 4px 20px rgba(124,58,237,.25); flex-wrap:wrap; gap:.75rem; }
+        .queue-banner-left { display:flex; align-items:center; gap:.7rem; }
+        .queue-icon { font-size:1.4rem; }
+        .queue-text h6 { font-weight:700; margin:0 0 .12rem; font-size:.95rem; }
+        .queue-text p  { font-size:.8rem; opacity:.8; margin:0; }
+
+        /* ══ INV PERFORMANCE BAR ══════════════════════ */
+        .inv-bar-wrap { display:flex; align-items:center; gap:.55rem; }
+        .inv-bar { flex:1; height:6px; background:#f0eff9; border-radius:99px; overflow:hidden; }
+        .inv-bar-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,#2563eb,#7c3aed); }
+        .inv-count { font-family:var(--mono); font-size:.75rem; color:var(--muted); min-width:2.2rem; text-align:right; }
+
+        /* ══ EMPTY STATE ══════════════════════════════ */
+        .empty-state { text-align:center; padding:3rem; color:var(--muted); }
+        .empty-state i { font-size:2.2rem; margin-bottom:.65rem; display:block; opacity:.3; }
+        .empty-state p { margin:0; font-size:.88rem; }
+
+        /* ══ HISTORY ROWS ═════════════════════════════ */
+        .hist-row { background:#fafaf8 !important; }
+        .hist-row td { color:var(--muted); font-size:.82rem; }
+
+        /* ══ MODAL ════════════════════════════════════ */
+        .modal-content { border:none; border-radius:16px; box-shadow:0 24px 60px rgba(0,0,0,.18); }
+        .modal-header { border-bottom:1px solid var(--border); padding:1.2rem 1.5rem; }
+        .modal-header h5 { font-weight:700; margin:0; font-size:1rem; }
+        .modal-body { padding:1.4rem 1.5rem; }
+        .modal-footer { border-top:1px solid var(--border); padding:1rem 1.5rem; }
+        .flabel { font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em;
+                  color:var(--muted); margin-bottom:.35rem; display:block; }
+        .fctrl { width:100%; border:1.5px solid var(--border); border-radius:10px;
+                 padding:.62rem .9rem; font-family:var(--sans); font-size:.9rem; outline:none;
+                 transition:border-color .2s; background:#f8f7f4; color:var(--ink); }
+        .fctrl:focus { border-color:var(--accent); background:#fff; }
+        textarea.fctrl { resize:vertical; }
+        select.fctrl { appearance:none; }
+        .findings-box { background:#f8f7f4; border-radius:10px; padding:1rem; margin-bottom:1rem; }
+        .findings-box .flabel { margin-bottom:.5rem; }
+        .findings-box p { font-size:.87rem; margin:0; color:var(--ink); }
+
+        /* ══ RESPONSIVE ═══════════════════════════════ */
+        @media (max-width:900px) { .stats-row { grid-template-columns:repeat(2,1fr); } }
+        @media (max-width:768px) { .main { padding:1rem; } .topbar { padding:.75rem 1rem; } }
+        @media (max-width:540px) { .stats-row { grid-template-columns:1fr; } }
+    </style>
+</head>
+<body>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-wrap">
+        {% for cat, msg in messages %}
+        <div class="flash-item flash-{{ cat }}">
+            {% if cat == 'success' %}<i class="bi bi-check-circle-fill"></i>
+            {% elif cat == 'danger' %}<i class="bi bi-exclamation-circle-fill"></i>
+            {% elif cat == 'warning' %}<i class="bi bi-exclamation-triangle-fill"></i>
+            {% else %}<i class="bi bi-info-circle-fill"></i>{% endif %}
+            {{ msg }}
+        </div>
+        {% endfor %}
+    </div>
+    <script>setTimeout(()=>{document.querySelector('.flash-wrap')?.remove()},4000);</script>
+    {% endif %}
+    {% endwith %}
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+        <div class="topbar-brand">
+            <span class="topbar-dot"></span> NJ GROUP · IMS
+        </div>
+        <div class="topbar-right">
+            <div class="user-chip">
+                <i class="bi bi-person-circle"></i>
+                {{ session['user_name'] }}
+                <span class="role-badge rb-{{ session['user_role'] }}">{{ session['user_role'] }}</span>
+            </div>
+            <a href="/logout" class="btn-logout"><i class="bi bi-box-arrow-right"></i> Logout</a>
+        </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+        <!-- Page header -->
+        <div class="page-header">
+            <div>
+                <div class="page-title">
+                    {% if session['user_role'] == 'Investigator' %}My Incident Workspace
+                    {% elif session['user_role'] == 'Admin' %}Admin Control Centre
+                    {% else %}Incident Feed{% endif %}
+                </div>
+                <p class="page-sub">
+                    {% if session['user_role'] == 'Investigator' %}Accept, refuse, or pick up incidents — view your full resolution history
+                    {% elif session['user_role'] == 'Admin' %}Full oversight — monitor all incidents and investigator performance
+                    {% else %}Log new incidents and track their progress in real time{% endif %}
+                </p>
+            </div>
+            {% if session['user_role'] == 'Reporter' %}
+            <button class="btn-primary-ims" data-bs-toggle="modal" data-bs-target="#reportModal">
+                <i class="bi bi-plus-lg"></i> New Incident
+            </button>
+            {% endif %}
+        </div>
+
+        <!-- STAT CARDS -->
+        <div class="stats-row">
+            {% if session['user_role'] == 'Investigator' %}
+                <div class="stat-card c-blue">
+                    <div class="stat-label">Active Tasks</div>
+                    <div class="stat-value sv-blue">{{ incidents|length }}</div>
+                </div>
+                <div class="stat-card c-amber">
+                    <div class="stat-label">In Progress</div>
+                    <div class="stat-value sv-amber">{{ incidents|selectattr('status','equalto','In Progress')|list|length }}</div>
+                </div>
+                <div class="stat-card c-green">
+                    <div class="stat-label">Resolved (History)</div>
+                    <div class="stat-value sv-green">{{ history|length }}</div>
+                </div>
+                <div class="stat-card c-violet">
+                    <div class="stat-label">Queued (Available)</div>
+                    <div class="stat-value sv-violet">{{ queued|length }}</div>
+                </div>
+            {% else %}
+                <div class="stat-card c-blue">
+                    <div class="stat-label">Total Incidents</div>
+                    <div class="stat-value sv-blue">{{ incidents|length }}</div>
+                </div>
+                <div class="stat-card c-amber">
+                    <div class="stat-label">Queued</div>
+                    <div class="stat-value sv-amber">{{ incidents|selectattr('status','equalto','Queued')|list|length }}</div>
+                </div>
+                <div class="stat-card c-violet">
+                    <div class="stat-label">In Progress</div>
+                    <div class="stat-value sv-violet">{{ incidents|selectattr('status','equalto','In Progress')|list|length }}</div>
+                </div>
+                <div class="stat-card c-green">
+                    <div class="stat-label">Closed</div>
+                    <div class="stat-value sv-green">{{ incidents|selectattr('status','equalto','Closed')|list|length }}</div>
+                </div>
+            {% endif %}
+        </div>
+
+
+        {# ═══════════════════════════════════════
+           INVESTIGATOR VIEW
+        ════════════════════════════════════════ #}
+        {% if session['user_role'] == 'Investigator' %}
+
+            <!-- Queue Banner -->
+            {% if queued %}
+            <div class="queue-banner">
+                <div class="queue-banner-left">
+                    <span class="queue-icon">📋</span>
+                    <div class="queue-text">
+                        <h6>{{ queued|length }} Incident(s) Waiting in Queue</h6>
+                        <p>These have no assigned investigator — scroll down to pick one up.</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Active Assignments -->
+            <div class="sec-head">
+                <h5><i class="bi bi-lightning-charge-fill"></i> Active Assignments</h5>
+                <span class="sec-count">{{ incidents|length }} task(s)</span>
+            </div>
+            <div class="tbl-card">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Incident ID</th>
+                                <th>Title &amp; Description</th>
+                                <th>Priority</th>
+                                <th>Category</th>
+                                <th>Reported By</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for i in incidents %}
+                            <tr>
+                                <td><code class="iid">{{ i.incident_id }}</code></td>
+                                <td>
+                                    <div style="font-weight:600;">{{ i.title }}</div>
+                                    <div style="font-size:.76rem;color:var(--muted);">{{ (i.description or '')[:70] }}{% if i.description and i.description|length > 70 %}…{% endif %}</div>
+                                </td>
+                                <td><span class="pri pri-{{ i.priority }}">{{ i.priority }}</span></td>
+                                <td style="color:var(--muted);font-size:.82rem;">{{ i.category }}</td>
+                                <td style="font-size:.82rem;">{{ i.created_by }}</td>
+                                <td>
+                                    {% if i.status == 'Assigned' %}<span class="sbadge sb-assigned">Assigned</span>
+                                    {% elif i.status == 'In Progress' %}<span class="sbadge sb-inprogress">In Progress</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div style="display:flex;gap:.35rem;flex-wrap:wrap;">
+                                        {% if i.status == 'Assigned' %}
+                                        <a href="/action/{{ i.id }}/accept" class="abtn abtn-accept"><i class="bi bi-check2"></i> Accept</a>
+                                        <a href="/action/{{ i.id }}/refuse" class="abtn abtn-refuse"
+                                           onclick="return confirm('Refuse this incident? It will be re-assigned or queued.')">
+                                           <i class="bi bi-x"></i> Refuse
+                                        </a>
+                                        {% elif i.status == 'In Progress' %}
+                                        <button class="abtn abtn-solve" data-bs-toggle="modal" data-bs-target="#solve-{{ i.id }}">
+                                            <i class="bi bi-upload"></i> Submit Report
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="7">
+                                <div class="empty-state"><i class="bi bi-inbox"></i><p>No active assignments right now.</p></div>
+                            </td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Queued Incidents — Pick Up -->
+            {% if queued %}
+            <div class="sec-head">
+                <h5><i class="bi bi-hourglass-split"></i> Queued — Available to Pick Up</h5>
+                <span class="sec-count">{{ queued|length }} waiting</span>
+            </div>
+            <div class="tbl-card">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Incident ID</th>
+                                <th>Title</th>
+                                <th>Priority</th>
+                                <th>Category</th>
+                                <th>Reported By</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for i in queued %}
+                            <tr>
+                                <td><code class="iid">{{ i.incident_id }}</code></td>
+                                <td>
+                                    <div style="font-weight:600;">{{ i.title }}</div>
+                                    <div style="font-size:.76rem;color:var(--muted);">{{ (i.description or '')[:65] }}{% if i.description and i.description|length > 65 %}…{% endif %}</div>
+                                </td>
+                                <td><span class="pri pri-{{ i.priority }}">{{ i.priority }}</span></td>
+                                <td style="font-size:.82rem;color:var(--muted);">{{ i.category }}</td>
+                                <td style="font-size:.82rem;">{{ i.created_by }}</td>
+                                <td>
+                                    <a href="/action/{{ i.id }}/pickup" class="abtn abtn-pickup">
+                                        <i class="bi bi-hand-index-thumb"></i> Pick Up
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- History -->
+            <div class="sec-head">
+                <h5><i class="bi bi-clock-history"></i> My Resolution History</h5>
+                <span class="sec-count">{{ history|length }} resolved</span>
+            </div>
+            <div class="tbl-card">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Incident ID</th>
+                                <th>Title</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Evidence PDF</th>
+                                <th>Findings Summary</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for i in history %}
+                            <tr class="hist-row">
+                                <td><code class="iid">{{ i.incident_id }}</code></td>
+                                <td>{{ i.title }}</td>
+                                <td><span class="pri pri-{{ i.priority }}">{{ i.priority }}</span></td>
+                                <td>
+                                    {% if i.status == 'Resolved' %}<span class="sbadge sb-resolved">Resolved</span>
+                                    {% else %}<span class="sbadge sb-closed">Closed</span>{% endif %}
+                                </td>
+                                <td>
+                                    {% if i.report_file %}
+                                    <a href="/download/{{ i.report_file }}" target="_blank" class="abtn abtn-pdf">
+                                        <i class="bi bi-file-earmark-pdf"></i> View PDF
+                                    </a>
+                                    {% else %}<span style="color:var(--muted);font-size:.78rem;">—</span>{% endif %}
+                                </td>
+                                <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.8rem;">
+                                    {{ i.findings or '—' }}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="6">
+                                <div class="empty-state"><i class="bi bi-journal-x"></i><p>No resolved incidents yet.</p></div>
+                            </td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+
+        {# ═══════════════════════════════════════
+           ADMIN / REPORTER VIEW
+        ════════════════════════════════════════ #}
+        {% else %}
+
+            <!-- All Incidents -->
+            <div class="sec-head">
+                <h5><i class="bi bi-list-stars"></i> All Incidents</h5>
+                <span class="sec-count">{{ incidents|length }} total</span>
+            </div>
+            <div class="tbl-card">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Incident</th>
+                                <th>Priority</th>
+                                <th>Assigned To</th>
+                                <th>Evidence</th>
+                                <th>Status</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for i in incidents %}
+                            <tr>
+                                <td><code class="iid">{{ i.incident_id }}</code></td>
+                                <td>
+                                    <div style="font-weight:600;max-width:230px;">{{ i.title }}</div>
+                                    <div style="font-size:.75rem;color:var(--muted);">{{ i.created_by }} · {{ i.category }}</div>
+                                </td>
+                                <td><span class="pri pri-{{ i.priority }}">{{ i.priority }}</span></td>
+                                <td>
+                                    {% if i.assigned_to_name %}
+                                    <div style="font-size:.84rem;font-weight:500;">{{ i.assigned_to_name }}</div>
+                                    {% else %}
+                                    <span style="color:var(--muted);font-size:.78rem;">Unassigned</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if i.report_file %}
+                                    <a href="/download/{{ i.report_file }}" target="_blank" class="abtn abtn-pdf">
+                                        <i class="bi bi-file-earmark-pdf"></i> PDF
+                                    </a>
+                                    {% else %}<span style="color:var(--muted);font-size:.78rem;">Pending</span>{% endif %}
+                                </td>
+                                <td>
+                                    {% if i.status == 'Assigned' %}<span class="sbadge sb-assigned">Assigned</span>
+                                    {% elif i.status == 'In Progress' %}<span class="sbadge sb-inprogress">In Progress</span>
+                                    {% elif i.status == 'Resolved' %}<span class="sbadge sb-resolved">Resolved</span>
+                                    {% elif i.status == 'Closed' %}<span class="sbadge sb-closed">Closed</span>
+                                    {% elif i.status == 'Queued' %}<span class="sbadge sb-queued">Queued</span>
+                                    {% else %}<span class="sbadge sb-pending">{{ i.status }}</span>{% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if session['user_role'] == 'Admin' and i.status == 'Resolved' %}
+                                    <button class="abtn abtn-close" data-bs-toggle="modal" data-bs-target="#close-{{ i.id }}">
+                                        <i class="bi bi-patch-check"></i> Verify &amp; Close
+                                    </button>
+                                    {% elif i.status == 'Closed' %}
+                                    <i class="bi bi-check-all text-success" style="font-size:1.2rem;"></i>
+                                    {% else %}
+                                    <span style="color:var(--muted);font-size:.78rem;">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="7">
+                                <div class="empty-state"><i class="bi bi-inbox"></i><p>No incidents logged yet.</p></div>
+                            </td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Investigator Performance (Admin only) -->
+            {% if session['user_role'] == 'Admin' %}
+            <div class="sec-head">
+                <h5><i class="bi bi-people-fill"></i> Investigator Performance</h5>
+            </div>
+            <div class="tbl-card">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Investigator</th>
+                                <th>Email</th>
+                                <th>Active Cases</th>
+                                <th>Resolved / Closed</th>
+                                <th>Workload</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if investigators %}
+                            {% for inv in investigators %}
+                            <tr>
+                                <td style="font-weight:600;">{{ inv.name }}</td>
+                                <td style="font-size:.82rem;color:var(--muted);">{{ inv.email }}</td>
+                                <td><span class="sbadge sb-inprogress">{{ inv.active }} active</span></td>
+                                <td><span class="sbadge sb-resolved">{{ inv.resolved }} done</span></td>
+                                <td style="min-width:140px;">
+                                    <div class="inv-bar-wrap">
+                                        <div class="inv-bar">
+                                            {% set total = inv.active + inv.resolved %}
+                                            {% if total > 0 %}
+                                            <div class="inv-bar-fill" style="width:{{ [((inv.active / total) * 100)|int, 100]|min }}%"></div>
+                                            {% else %}
+                                            <div class="inv-bar-fill" style="width:0%"></div>
+                                            {% endif %}
+                                        </div>
+                                        <span class="inv-count">{{ inv.active }}/{{ inv.active + inv.resolved }}</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% else %}
+                            <tr><td colspan="5">
+                                <div class="empty-state"><i class="bi bi-person-x"></i><p>No investigators registered.</p></div>
+                            </td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+        {% endif %}
+
+    </div><!-- /main -->
+
+
+    {# ═══════════════════════════════════════
+       MODALS
+    ════════════════════════════════════════ #}
+
+    <!-- Reporter: New Incident -->
+    {% if session['user_role'] == 'Reporter' %}
+    <div class="modal fade" id="reportModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <form class="modal-content" action="/report" method="POST">
+                <div class="modal-header">
+                    <h5><i class="bi bi-plus-circle-fill text-primary me-2"></i>Log New Incident</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="flabel">Incident Title *</label>
+                        <input type="text" name="title" class="fctrl" placeholder="Brief summary of the issue" required>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="flabel">Category</label>
+                            <select name="category" class="fctrl">
+                                <option>Security</option>
+                                <option>Hardware</option>
+                                <option>Network</option>
+                                <option>Software</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="flabel">Priority</label>
+                            <select name="priority" class="fctrl">
+                                <option>Low</option>
+                                <option selected>Medium</option>
+                                <option>High</option>
+                                <option>Critical</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="flabel">Detailed Description *</label>
+                        <textarea name="description" class="fctrl" rows="4" placeholder="Describe the issue in detail…" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn-primary-ims"><i class="bi bi-send"></i> Submit &amp; Auto-Assign</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Investigator: Submit Report Modals -->
+    {% if session['user_role'] == 'Investigator' %}
+        {% for i in incidents %}
+        {% if i.status == 'In Progress' %}
+        <div class="modal fade" id="solve-{{ i.id }}" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <form class="modal-content" action="/solve/{{ i.id }}" method="POST" enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <h5><i class="bi bi-clipboard2-check-fill text-primary me-2"></i>Resolve: {{ i.incident_id }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="flabel">Investigation Findings *</label>
+                            <textarea name="findings_text" class="fctrl" rows="5" required
+                                placeholder="Describe your investigation steps, root cause, and resolution…"></textarea>
+                        </div>
+                        <div>
+                            <label class="flabel">Attach Evidence (PDF) *</label>
+                            <input type="file" name="evidence_pdf" class="fctrl" accept=".pdf" required style="padding:.5rem .9rem;">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn-primary-ims"><i class="bi bi-send-check"></i> Submit to Admin</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    {% endif %}
+
+    <!-- Admin: Verify & Close Modals -->
+    {% if session['user_role'] == 'Admin' %}
+        {% for i in incidents %}
+        {% if i.status == 'Resolved' %}
+        <div class="modal fade" id="close-{{ i.id }}" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <form class="modal-content" action="/close/{{ i.id }}" method="POST">
+                    <div class="modal-header">
+                        <h5><i class="bi bi-patch-check-fill text-success me-2"></i>Close: {{ i.incident_id }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="findings-box">
+                            <span class="flabel">Investigator Findings</span>
+                            <p>{{ i.findings or 'No findings provided.' }}</p>
+                            {% if i.report_file %}
+                            <a href="/download/{{ i.report_file }}" target="_blank" class="abtn abtn-pdf mt-2">
+                                <i class="bi bi-file-earmark-pdf"></i> View PDF Evidence
+                            </a>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label class="flabel">Admin Close Note (optional)</label>
+                            <textarea name="close_note" class="fctrl" rows="3" placeholder="Add verification notes…"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn-primary-ims" style="background:#15803d;">
+                            <i class="bi bi-check2-all"></i> Confirm &amp; Close
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

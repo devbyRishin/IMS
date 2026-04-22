@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NJ Group IMS — Register</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa; /* Light grey background */
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+            margin: 0;
+        }
+        .register-card {
+            background: #ffffff;
+            padding: 40px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px; /* Non-fancy sharp corners */
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .nj-header {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            color: #000;
+        }
+        .sub-text {
+            text-align: center;
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 25px;
+        }
+        .form-label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .form-control, .form-select {
+            border-radius: 2px;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            background-color: #fff;
+        }
+        .btn-auth {
+            background-color: #000;
+            color: white;
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 2px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .btn-auth:hover {
+            background-color: #333;
+            color: white;
+        }
+        .flash-wrap {
+            position: fixed;
+            top: 20px;
+            width: 100%;
+            max-width: 400px;
+            z-index: 1000;
+        }
+        .footer-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-wrap">
+        {% for cat, msg in messages %}
+        <div class="alert alert-{{ 'danger' if cat == 'error' else cat }} alert-dismissible fade show">
+            {{ msg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="register-card">
+        <div class="nj-header">NJ Group</div>
+        <div class="sub-text">Personnel Registration Portal</div>
+        
+        <form method="POST" action="/register">
+            <div class="mb-3">
+                <label class="form-label">Full Name</label>
+                <input type="text" name="fullname" class="form-control" placeholder="John Doe" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Email Address</label>
+                <input type="email" name="email" class="form-control" placeholder="you@company.com" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">System Role</label>
+                <select name="role" class="form-select" required>
+                    <option value="Reporter">Inccident Reporter</option>
+                    <option value="Investigator">Inccident Investigator</option>
+                    <option value="Admin">Inccident Admin</option>
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Password</label>
+                <input type="password" name="password" class="form-control" placeholder="••••••••" required minlength="6">
+            </div>
+
+            <button type="submit" class="btn-auth">Create Account</button>
+        </form>
+
+        <div class="footer-link">
+            Already have an account? <a href="/" class="text-decoration-none text-dark fw-bold">Sign in here</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

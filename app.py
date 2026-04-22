@@ -26,5 +26,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'im
     return app
 
 
+# Create the app instance for the production server
+app = create_app()
+
 if __name__ == '__main__':
-    create_app().run(port=5000, debug=True)
+    # This only runs when you test locally on your own computer
+    app.run(port=5000, debug=True)
